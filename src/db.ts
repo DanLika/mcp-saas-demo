@@ -110,16 +110,28 @@ export const PUBLIC_SCHEMA = {
 };
 
 const FORBIDDEN = /\b(insert|update|delete|drop|alter|create|replace|attach|detach|pragma|vacuum|reindex|begin|commit|savepoint|load_extension)\b/i;
-const PRIVATE_REF = /\b_(tenants|users|subscriptions|invoices|ctx)\b/i;
+// SQLite metadata relations leak schema (table names + full DDL) even though they
+// expose no tenant rows: sqlite_master/sqlite_schema, the pragma_* table-valued
+// functions, and dbstat. The bare `pragma` keyword is already in FORBIDDEN, but
+// `pragma_table_list` has no word boundary after "pragma", so it needs its own pattern.
+const METADATA = /\b(sqlite_[a-z0-9_]+|pragma_[a-z0-9_]+|dbstat)\b/i;
+// Any leading-underscore identifier. Every private base table is `_`-prefixed, so this
+// covers them all (and any added later); column names like mrr_cents/created_at have
+// only INTERNAL underscores, which don't match \b_.
+const PRIVATE_REF = /\b_[a-z]\w*/i;
 
-/** Validate that `sql` is a single, read-only SELECT against public views only. */
+/** Validate that `sql` is a single, read-only SELECT against the public views only.
+ *  Comments are stripped first so they can't smuggle keywords past these checks or
+ *  break the LIMIT wrap in runReadonlyQuery. */
 export function assertSafeSelect(sql: string): string {
-  const trimmed = sql.trim().replace(/;\s*$/, "");
+  const noComments = sql.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
+  const trimmed = noComments.trim().replace(/;\s*$/, "");
   if (!/^select\b/i.test(trimmed) && !/^with\b/i.test(trimmed)) {
     throw new Error("Only read-only SELECT (or WITH ... SELECT) queries are allowed.");
   }
   if (trimmed.includes(";")) throw new Error("Only a single statement is allowed.");
   if (FORBIDDEN.test(trimmed)) throw new Error("Query contains a forbidden keyword (writes/DDL are not allowed).");
+  if (METADATA.test(trimmed)) throw new Error("Query references SQLite metadata (sqlite_*, pragma_*, dbstat) — not allowed.");
   if (PRIVATE_REF.test(trimmed)) throw new Error("Query references a private table. Use the public views: tenants, users, subscriptions, invoices.");
   return trimmed;
 }

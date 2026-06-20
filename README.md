@@ -1,7 +1,5 @@
 # mcp-saas-demo
 
-[![CI](https://github.com/DanLika/mcp-saas-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/DanLika/mcp-saas-demo/actions/workflows/ci.yml)
-
 A small, **runnable** Model Context Protocol (MCP) server for a multi-tenant SaaS, built to demonstrate the MCP server patterns that came out of the WorkOS MCP Night talks (2025–2026). It is deliberately tiny but gets the load-bearing things right: a small tool surface, SQL-as-interface, and **server-enforced tenant isolation** that a model cannot bypass.
 
 Stack: TypeScript + the official `@modelcontextprotocol/sdk`, with `node:sqlite` as a zero-dependency stand-in for Postgres/Supabase.
@@ -69,9 +67,9 @@ The rule from the talks: **never let the model enforce authorization.** Here is 
      WHERE tenant_id = (SELECT tenant_id FROM _ctx);
    ```
    So `SELECT * FROM users` returns only the active tenant's rows, no matter what the model writes. There is no `tenant_id` column to filter on or forge.
-4. `assertSafeSelect` enforces single-statement, `SELECT`-only, no DDL/DML, no private-table references. Results are wrapped in an outer `LIMIT`.
+4. `assertSafeSelect` strips comments, then enforces single-statement, `SELECT`-only, no DDL/DML, no private-table references (any leading-underscore identifier), and no SQLite metadata relations (`sqlite_master`/`sqlite_schema`, the `pragma_*` table-valued functions, `dbstat`) — so the model can't even read the private schema. Results are wrapped in an outer `LIMIT`.
 
-`npm run smoke` and `npm run test:client` both prove a `globex` session cannot see `acme` rows and that `SELECT * FROM _users` / `DELETE …` / `PRAGMA …` are rejected.
+`npm run smoke` and `npm run test:client` both prove a `globex` session cannot see `acme` rows and that writes, `SELECT * FROM _users`, `SELECT … FROM sqlite_master`, and `pragma_table_list` are all rejected.
 
 ## The 2026 MCP auth model (documented, not run)
 
@@ -90,7 +88,7 @@ The tenant in step 3's validated token is exactly what `setTenant()` simulates h
 Keep the shape, change the engine:
 - Replace `node:sqlite` with a Postgres pool pointed at Supabase.
 - Replace the view trick with **Row-Level Security**: a read-only role plus `USING (tenant_id = current_setting('app.tenant_id'))`, and `SET app.tenant_id = $1` per request from the token claim.
-- Keep `assertSafeSelect` and the row cap; keep the tenant out of the model's hands.
+- Keep the row cap and keep the tenant out of the model's hands. Treat `assertSafeSelect` as defense-in-depth, not the boundary — RLS + a read-only role is the real isolation. The regex denylist is **SQLite-specific**: on Postgres, re-derive it (block `pg_catalog`, `information_schema`, dollar-quoted `$$…$$` and `E'…'` strings) rather than porting it verbatim.
 
 ## Project layout
 

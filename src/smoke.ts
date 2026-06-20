@@ -34,10 +34,23 @@ for (const bad of [
   "DELETE FROM users",
   "UPDATE users SET role='owner'",
   "PRAGMA table_info(_users)",
+  "SELECT name, sql FROM sqlite_master",        // schema DDL disclosure
+  "SELECT name, sql FROM sqlite_schema",
+  "SELECT name FROM dbstat",                      // table enumeration + page sizes
+  "SELECT * FROM pragma_table_list",             // pragma_* TVF (bare `pragma` boundary miss)
+  "SELECT id FROM users -- hide\nUNION SELECT id FROM _users", // comment can't hide a later _users ref
 ]) {
   let rejected = false;
   try { runSql(bad); } catch { rejected = true; }
-  check(`rejects: ${bad}`, rejected);
+  check(`rejects: ${bad.replace(/\n/g, " ")}`, rejected);
+}
+
+// Comments are stripped, not allowed to break the query (was an "incomplete input" error).
+try {
+  const r = runSql("SELECT id FROM users -- list everyone");
+  check("trailing comment handled (query runs)", r.rows.length > 0, `${r.rows.length} rows`);
+} catch (e) {
+  check("trailing comment handled (query runs)", false, String(e));
 }
 
 console.log("\n=== row cap ===");
