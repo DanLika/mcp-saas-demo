@@ -1,0 +1,8 @@
+{
+  "resource": "https://mcp.example.com",
+  "authorization_servers": ["https://auth.example.com"],
+  "bearer_methods_supported": ["header"],
+  "scopes_supported": ["saas:read"],
+  "resource_name": "SaaS Demo MCP Server",
+  "resource_documentation": "https://github.com/your-org/mcp-saas-demo"
+}
