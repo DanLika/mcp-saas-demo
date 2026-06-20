@@ -1,5 +1,7 @@
 # mcp-saas-demo
 
+[![CI](https://github.com/DanLika/mcp-saas-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/DanLika/mcp-saas-demo/actions/workflows/ci.yml)
+
 A small, **runnable** Model Context Protocol (MCP) server for a multi-tenant SaaS, built to demonstrate the MCP server patterns that came out of the WorkOS MCP Night talks (2025–2026). It is deliberately tiny but gets the load-bearing things right: a small tool surface, SQL-as-interface, and **server-enforced tenant isolation** that a model cannot bypass.
 
 Stack: TypeScript + the official `@modelcontextprotocol/sdk`, with `node:sqlite` as a zero-dependency stand-in for Postgres/Supabase.
@@ -110,3 +112,7 @@ A live OAuth server, a remote (Streamable HTTP) transport, and write tools. The 
 ---
 
 Built by Dusko Licanin as a hands-on study of production MCP patterns. Source specs: [modelcontextprotocol.io](https://modelcontextprotocol.io), RFC 9728 / 8707 / 8414, and Cloudflare's "Code Mode" writeup.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

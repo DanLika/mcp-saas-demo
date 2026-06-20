@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24" # node:sqlite is stable from Node 24
+      - run: npm ci
+      - run: npm run build
+      - run: npm run smoke # tool logic + tenant isolation + guard assertions
+      - run: npm run test:client # end-to-end MCP client over stdio
