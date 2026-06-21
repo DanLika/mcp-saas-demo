@@ -109,7 +109,7 @@ A live OAuth server, a remote (Streamable HTTP) transport, and write tools. The 
 
 ---
 
-Built by Dusko Licanin as a hands-on study of production MCP patterns. Source specs: [modelcontextprotocol.io](https://modelcontextprotocol.io), RFC 9728 / 8707 / 8414, and Cloudflare's "Code Mode" writeup.
+Built by [Dusko Licanin](https://duskolicanin.com) — full-stack developer — as a hands-on study of production MCP patterns. Source specs: [modelcontextprotocol.io](https://modelcontextprotocol.io), RFC 9728 / 8707 / 8414, and Cloudflare's "Code Mode" writeup.
 
 ## License
 
